@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Dota2me</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="steam_id">D939477D960B9DE3486D82D4C904B10A</string>
+</resources>
