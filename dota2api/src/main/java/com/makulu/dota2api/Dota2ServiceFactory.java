@@ -18,6 +18,7 @@ import com.makulu.dota2api.model.item.ItemSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.List;
 
@@ -41,86 +42,109 @@ public final class Dota2ServiceFactory {
     }
 
     public static void init(Context context) {
-        Observable heros=Observable.create(new Observable.OnSubscribe<HeroResult>() {
-            @Override
-            public void call(Subscriber<? super HeroResult> subscriber) {
-                InputStreamReader inputStream = null;
-                BufferedReader bufReader = null;
-                try {
-                    inputStream = new InputStreamReader(context.getAssets().open("heros.json"));
-                    bufReader = new BufferedReader(inputStream);
-                    String line;
-                    StringBuilder Result = new StringBuilder();
-                    while ((line = bufReader.readLine()) != null)
-                        Result.append(line);
-                    subscriber.onNext(new Gson().fromJson(Result.toString(), HeroResult.class));
-                    subscriber.onCompleted();
-                } catch (IOException e) {
-                    subscriber.onError(e);
-                } finally {
-                    if (bufReader != null) {
+        Observable<Hero> heros = Observable
+                .create(new Observable.OnSubscribe<InputStream>() {
+                    @Override
+                    public void call(Subscriber<? super InputStream> subscriber) {
                         try {
-                            bufReader.close();
+                            subscriber.onNext(context.getAssets().open("heros.json"));
+                            subscriber.onCompleted();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            subscriber.onError(e);
                         }
                     }
-                    if (inputStream != null) {
+                })
+                .map(InputStreamReader::new)
+                .map(BufferedReader::new)
+                .flatMap(bufferedReader -> Observable.create(new Observable.OnSubscribe<HeroResult>() {
+                    @Override
+                    public void call(Subscriber<? super HeroResult> subscriber) {
+                        String line;
+                        StringBuilder Result = new StringBuilder();
                         try {
-                            inputStream.close();
+                            while ((line = bufferedReader.readLine()) != null)
+                                Result.append(line);
+                            subscriber.onNext(new Gson().fromJson(Result.toString(), HeroResult.class));
+                            subscriber.onCompleted();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            subscriber.onError(e);
+                        } finally {
+                            if (bufferedReader != null) {
+                                try {
+                                    bufferedReader.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     }
-                }
-            }
-        })
+                }))
                 .compose(logSource("正在解压英雄数据..."))
+                .doOnNext(heroResult -> DotaCache.initHero(heroResult.result.heroes))
                 .flatMap(heroResult -> Observable.from(heroResult.result.heroes))
                 .compose(saveHeroToDisk(context))
-                .subscribeOn(Schedulers.io())
-                .doOnNext(hero -> EventBus.getDefault().post(new HeroEvent(hero.getLocalized_name() + "保存完毕!")));
-        Observable items=Observable.create(new Observable.OnSubscribe<ItemResult>() {
-            @Override
-            public void call(Subscriber<? super ItemResult> subscriber) {
-                InputStreamReader inputStream = null;
-                BufferedReader bufReader = null;
-                try {
-                    inputStream = new InputStreamReader(context.getAssets().open("items.json"));
-                    bufReader = new BufferedReader(inputStream);
-                    String line;
-                    StringBuilder Result = new StringBuilder();
-                    while ((line = bufReader.readLine()) != null)
-                        Result.append(line);
-                    subscriber.onNext(new Gson().fromJson(Result.toString(), ItemResult.class));
-                    subscriber.onCompleted();
-                } catch (IOException e) {
-                    subscriber.onError(e);
-                } finally {
-                    if (bufReader != null) {
+                .compose(heroObservable -> heroObservable.doOnNext(hero -> EventBus.getDefault().post(new HeroEvent(hero.getLocalized_name() + "保存完毕!"))))
+                .subscribeOn(Schedulers.io());
+
+
+        Observable<Item> items = Observable
+                .create(new Observable.OnSubscribe<InputStream>() {
+                    @Override
+                    public void call(Subscriber<? super InputStream> subscriber) {
                         try {
-                            bufReader.close();
+                            subscriber.onNext(context.getAssets().open("items.json"));
+                            subscriber.onCompleted();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            subscriber.onError(e);
                         }
                     }
-                    if (inputStream != null) {
+                })
+                .map(InputStreamReader::new)
+                .map(BufferedReader::new)
+                .flatMap(bufReader -> Observable.create(new Observable.OnSubscribe<ItemResult>() {
+                    @Override
+                    public void call(Subscriber<? super ItemResult> subscriber) {
                         try {
-                            inputStream.close();
+                            String line;
+                            StringBuilder Result = new StringBuilder();
+                            while ((line = bufReader.readLine()) != null)
+                                Result.append(line);
+                            subscriber.onNext(new Gson().fromJson(Result.toString(), ItemResult.class));
+                            subscriber.onCompleted();
                         } catch (IOException e) {
-                            e.printStackTrace();
+                            subscriber.onError(e);
+                        } finally {
+                            if (bufReader != null) {
+                                try {
+                                    bufReader.close();
+                                } catch (IOException e) {
+                                    e.printStackTrace();
+                                }
+                            }
                         }
                     }
-                }
-            }
-        })
+                }))
                 .compose(logSource("正在解压物品数据..."))
+                .doOnNext(itemResult -> DotaCache.initItem(itemResult.result.items))
                 .flatMap(itemResult -> Observable.from(itemResult.result.items))
                 .compose(saveItemToDisk(context))
-                .subscribeOn(Schedulers.io())
-                .doOnNext(item -> EventBus.getDefault().post(new ItemEvent(item.getLocalized_name() + "保存完毕!")));
-        Observable.merge(heros,items).subscribe((Action1) o -> {
-            EventBus.getDefault().post(new InitFinishEvent("初始化完毕!"));
+                .compose(itemObservable -> itemObservable.doOnNext(item -> EventBus.getDefault().post(new ItemEvent(item.getLocalized_name() + "保存完毕!"))))
+                .subscribeOn(Schedulers.io());
+        Observable.merge(heros, items).subscribe(new Subscriber<Object>() {
+            @Override
+            public void onCompleted() {
+                EventBus.getDefault().post(new InitFinishEvent("初始化完毕!"));
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                EventBus.getDefault().post(new InitFinishEvent("初始化失败!"));
+            }
+
+            @Override
+            public void onNext(Object o) {
+
+            }
         });
     }
 

@@ -9,6 +9,7 @@ import android.widget.Button;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.makulu.dota2api.Dota2ServiceFactory;
 import com.makulu.dota2api.model.event.BaseEvent;
 import com.makulu.dota2api.model.event.HeroEvent;
 import com.makulu.dota2api.model.event.InitFinishEvent;
@@ -34,7 +35,8 @@ public class SplashActivity extends Activity implements View.OnClickListener {
         btn = (Button) findViewById(R.id.login);
         btn.setOnClickListener(this);
         EventBus.getDefault().register(this);
-//        Dota2ServiceFactory.init(this);
+        Dota2ServiceFactory.init(this);
+        Dota2ServiceFactory.getHeros(this);
     }
 
     public void onEventMainThread(HeroEvent heroEvent) {

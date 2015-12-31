@@ -13,6 +13,8 @@ import io.realm.Realm;
 import io.realm.RealmQuery;
 import io.realm.RealmResults;
 import rx.Observable;
+import rx.functions.Action1;
+import rx.functions.Func1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -50,8 +52,8 @@ public class HeroSource {
             Realm instance = Realm.getInstance(context);
             RealmQuery<HeroRealm> query = instance.where(HeroRealm.class);
             RealmResults<HeroRealm> result1 = query.findAll();
-            List<Hero> resultCopy= new ArrayList<>();
-            for(HeroRealm hero:result1){
+            List<Hero> resultCopy = new ArrayList<>();
+            for (HeroRealm hero : result1) {
                 resultCopy.add(HeroConverter.convertToHero(hero));
             }
             instance.close();
@@ -68,7 +70,7 @@ public class HeroSource {
                 .compose(logSource("DISK"));
     }
 
-    public Observable<Data<List<Hero>>> network(final Context context,final String key, final String lang) {
+    public Observable<Data<List<Hero>>> network(final Context context, final String key, final String lang) {
         Observable<Data<List<Hero>>> observable = RetrofitUtils.createApi(Dota2Service.class)
                 .getHeros(key, lang)
                 .flatMap(result -> {
@@ -110,12 +112,66 @@ public class HeroSource {
             List<Hero> heros = data.getData();
             Realm realm = Realm.getInstance(context);
             realm.beginTransaction();
-            for(Hero hero:heros) {
+            for (Hero hero : heros) {
                 realm.copyToRealmOrUpdate(HeroConverter.convertToHeroRealm(hero));
             }
             realm.commitTransaction();
             realm.close();
             System.out.println("data is saved to disk.");
         });
+    }
+
+
+    public Observable<Hero> memory(String heroId) {
+
+        return Observable.just(memory)
+                .filter(o -> null!=o)
+                .flatMap(listData -> Observable.from(listData.getData()))
+                .filter(hero -> heroId.equals(hero.getId()))
+                .takeFirst(hero -> hero!=null);
+    }
+
+    public Observable<Hero> disk(final Context context, String heroId) {
+        Observable<Data<List<Hero>>> observable = Observable.create(subscriber -> {
+            Realm instance = Realm.getInstance(context);
+            RealmQuery<HeroRealm> query = instance.where(HeroRealm.class);
+            RealmResults<HeroRealm> result1 = query.findAll();
+            List<Hero> resultCopy = new ArrayList<>();
+            for (HeroRealm hero : result1) {
+                resultCopy.add(HeroConverter.convertToHero(hero));
+            }
+            instance.close();
+            Data<List<Hero>> data = new Data<>("1000");
+            data.setData(resultCopy);
+            subscriber.onNext(data);
+            subscriber.onCompleted();
+
+        });
+        // Cache disk responses in memory
+        observable
+                .doOnNext(data -> memory = data)
+                .compose(logSource("DISK"))
+                .observeOn(Schedulers.io())
+                .subscribe();
+
+        return memory(heroId);
+    }
+
+    public Observable<Hero> network(final Context context, final String key, final String lang, String heroId) {
+        Observable<Data<List<Hero>>> observable = RetrofitUtils.createApi(Dota2Service.class)
+                .getHeros(key, lang)
+                .flatMap(result -> {
+                    requestNumber++;
+                    Data<List<Hero>> data = new Data<>("Server Response #" + requestNumber);
+                    data.setData(result.result.heroes);
+                    return Observable.just(data);
+                });
+
+        // Save network responses to disk and cache in memory
+        observable
+                .compose(saveToMemory())
+                .compose(saveToDisk(context))
+                .compose(logSource("NETWORK"));
+        return memory(heroId);
     }
 }

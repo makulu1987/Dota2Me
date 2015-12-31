@@ -15,7 +15,19 @@
         android:orientation="vertical">
 
         <TextView
-            android:id="@+id/history_content"
+            android:id="@+id/history_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/history_seq_number"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/history_time"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+        <TextView
+            android:id="@+id/history_lobbyType"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
 
@@ -25,58 +37,89 @@
             android:shrinkColumns="0,1"
             android:stretchColumns="0,1">
 
-            <TableRow>
+            <TableRow >
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/radiant_01"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/dire_01"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
+
             </TableRow>
 
             <TableRow>
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/radiant_02"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/dire_02"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
             </TableRow>
 
             <TableRow>
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/radiant_03"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/dire_03"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
             </TableRow>
 
             <TableRow>
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/radiant_04"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/dire_04"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
             </TableRow>
 
             <TableRow>
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/radiant_05"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
 
-                <TextView
+                <com.facebook.drawee.view.SimpleDraweeView
                     android:id="@+id/dire_05"
+                    android:layout_height="96dp"
+                    android:layout_width="96dp"
+                    android:scaleType="centerInside"
                     android:gravity="center" />
             </TableRow>
         </TableLayout>

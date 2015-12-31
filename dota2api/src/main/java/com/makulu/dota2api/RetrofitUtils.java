@@ -22,7 +22,7 @@ public class RetrofitUtils {
                     builder.setEndpoint(Dota2Service.Dota2Url);//设置远程地址
                     OkHttpClient client = new OkHttpClient();
                     builder.setClient(new OkClient(client));
-                    builder.setLogLevel(BuildConfig.DEBUG ? RestAdapter.LogLevel.FULL : RestAdapter.LogLevel.NONE);
+                    builder.setLogLevel(RestAdapter.LogLevel.FULL );
                     builder.setErrorHandler(cause -> cause);
                     singleton = builder.build();
                 }

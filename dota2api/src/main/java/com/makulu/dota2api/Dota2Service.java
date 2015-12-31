@@ -2,6 +2,7 @@ package com.makulu.dota2api;
 
 import com.makulu.dota2api.model.hero.HeroResult;
 import com.makulu.dota2api.model.item.ItemResult;
+import com.makulu.dota2api.model.match.MatchDetail;
 import com.makulu.dota2api.model.match.MatchResult;
 
 import retrofit.http.GET;
@@ -112,7 +113,7 @@ public interface Dota2Service {
     String GetMatchDetails = "/IDOTA2Match_570/GetMatchDetails/v001/";
 
     @GET(GetMatchDetails)
-    Observable<MatchResult> getMatchDetails(@Query("key") String key, @Query("match_id") String match_id);
+    Observable<MatchDetail> getMatchDetails(@Query("key") String key, @Query("match_id") String match_id);
     /**
      Available options:
      Code:
