@@ -9,9 +9,12 @@
         android:icon="@mipmap/dota_icon"
         android:label="@string/app_name">
         <activity
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:name=".SplashActivity"
             android:label="@string/app_name"
-            android:launchMode="singleInstance">
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:launchMode="singleInstance"
+            android:screenOrientation="landscape">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -19,11 +22,17 @@
             </intent-filter>
         </activity>
         <activity
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:name=".MainActivity"
             android:label="@string/app_name"
-            android:launchMode="singleInstance" />
+            android:launchMode="singleInstance"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="landscape" />
         <activity
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
             android:name=".MatchDetailActivity"
-            android:launchMode="singleInstance" />
+            android:launchMode="singleInstance"
+            android:configChanges="orientation|screenSize|keyboardHidden"
+            android:screenOrientation="landscape" />
     </application>
 </manifest>

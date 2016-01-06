@@ -15,7 +15,7 @@ import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
 import com.facebook.drawee.view.SimpleDraweeView;
 import com.makulu.dota2api.Dota2Service;
-import com.makulu.dota2api.DotaCache;
+import com.makulu.dota2api.Dota2;
 import com.makulu.dota2api.HeroSize;
 import com.makulu.dota2api.RetrofitUtils;
 import com.makulu.dota2api.UrlGenerator;
@@ -151,8 +151,8 @@ public class MatchDetailActivity extends RxActivity {
         PipelineDraweeControllerBuilder builder = Fresco.newDraweeControllerBuilder()
                 .setTapToRetryEnabled(true)
                 .setOldController(simpleDraweeView.getController());
-        if (!TextUtils.isEmpty(heroId) && null != DotaCache.getHero(heroId)) {
-            Hero hero = DotaCache.getHero(heroId);
+        if (!TextUtils.isEmpty(heroId) && null != Dota2.getHero(heroId)) {
+            Hero hero = Dota2.getHero(heroId);
             builder.setUri(UrlGenerator.generateHeroImage(hero.getName(), heroSize));
         } else {
             builder.setUri(Uri.parse("http://bizhi.33lc.com/uploadfile/2013/0909/20130909093801210.jpg"));
@@ -165,8 +165,8 @@ public class MatchDetailActivity extends RxActivity {
         PipelineDraweeControllerBuilder builder = Fresco.newDraweeControllerBuilder()
                 .setTapToRetryEnabled(true)
                 .setOldController(simpleDraweeView.getController());
-        if (!TextUtils.isEmpty(itemId) && null != DotaCache.getItem(itemId)) {
-            Item item = DotaCache.getItem(itemId);
+        if (!TextUtils.isEmpty(itemId) && null != Dota2.getItem(itemId)) {
+            Item item = Dota2.getItem(itemId);
             builder.setUri(UrlGenerator.generateItemImage(item.getId()));
         } else {
             builder.setUri(Uri.parse("http://bizhi.33lc.com/uploadfile/2013/0909/20130909093801210.jpg"));

@@ -8,26 +8,18 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.interfaces.DraweeController;
 import com.facebook.drawee.view.SimpleDraweeView;
-import com.makulu.dota2api.Data;
-import com.makulu.dota2api.Dota2ServiceFactory;
+import com.makulu.dota2api.Dota2;
 import com.makulu.dota2api.HeroSize;
-import com.makulu.dota2api.model.hero.Hero;
-import com.makulu.dota2me.R;
-import com.makulu.dota2api.RetrofitUtils;
 import com.makulu.dota2api.UrlGenerator;
+import com.makulu.dota2api.model.hero.Hero;
 import com.trello.rxlifecycle.components.RxFragment;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
-
-import rx.Subscriber;
-import rx.functions.Action1;
 
 /**
  * Created by xujintian on 2015/8/17.
@@ -50,18 +42,7 @@ public class HeroFragment extends RxFragment {
         recyclerView = (RecyclerView) view.findViewById(R.id.items);
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3, GridLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(historyAdapter);
-
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Dota2ServiceFactory.getHeros(getActivity()).compose(RetrofitUtils.applyCommon2Main())
-                .compose(this.<Data<List<Hero>>>bindToLifecycle())
-                .delaySubscription(300,TimeUnit.MILLISECONDS)
-                .subscribe(listData -> {
-                    historyAdapter.refresh(listData.getData());
-                });
+        historyAdapter.refresh(Dota2.getHeros());
     }
 
     class HistoryAdapter extends RecyclerView.Adapter<ItemHolder> {
@@ -119,10 +100,4 @@ public class HeroFragment extends RxFragment {
         return HeroSize.FQHP;
     }
 
-
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        Dota2ServiceFactory.clearHeroMemory();
-    }
 }

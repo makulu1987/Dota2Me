@@ -1,7 +1,7 @@
 package com.makulu.dota2me;
 
 import android.content.Intent;
-import android.net.Uri;
+import android.graphics.Point;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.widget.LinearLayoutManager;
@@ -11,13 +11,17 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.animation.AlphaAnimation;
+import android.view.animation.AnimationUtils;
 import android.widget.TextView;
 
 import com.facebook.drawee.backends.pipeline.Fresco;
 import com.facebook.drawee.backends.pipeline.PipelineDraweeControllerBuilder;
+import com.facebook.drawee.generic.GenericDraweeHierarchy;
 import com.facebook.drawee.view.SimpleDraweeView;
+import com.facebook.imagepipeline.request.ImageRequest;
+import com.makulu.dota2api.Dota2;
 import com.makulu.dota2api.Dota2Service;
-import com.makulu.dota2api.DotaCache;
 import com.makulu.dota2api.HeroSize;
 import com.makulu.dota2api.LobbyType;
 import com.makulu.dota2api.RetrofitUtils;
@@ -32,7 +36,6 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Created by xujintian on 2015/8/17.
@@ -43,6 +46,17 @@ public class MainFragment extends RxFragment {
     HistoryAdapter historyAdapter = new HistoryAdapter();
     SimpleDateFormat sdf = new SimpleDateFormat("yyyy年MM月dd日 HH时mm分ss秒");
 
+    SimpleDraweeView[] radiants = new SimpleDraweeView[5];
+    SimpleDraweeView[] dirs = new SimpleDraweeView[5];
+
+    LinearLayoutManager layoutManager;
+
+    float allAspectRatio = 0;
+
+    private static final int EXPAND_STATE=0;
+    private static final int COLLAPSE_STATE=1;
+    private int state=EXPAND_STATE;
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -52,12 +66,120 @@ public class MainFragment extends RxFragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        Point size = new Point();
+        getActivity().getWindowManager().getDefaultDisplay().getSize(size);
+        allAspectRatio = ((float) size.x) / (2 * size.y);
+
+
         tv = (TextView) view.findViewById(R.id.content);
+        tv.setText("近期比赛");
+
+        radiants[0] = (SimpleDraweeView) view.findViewById(R.id.radiant_01);
+        radiants[1] = (SimpleDraweeView) view.findViewById(R.id.radiant_02);
+        radiants[2] = (SimpleDraweeView) view.findViewById(R.id.radiant_03);
+        radiants[3] = (SimpleDraweeView) view.findViewById(R.id.radiant_04);
+        radiants[4] = (SimpleDraweeView) view.findViewById(R.id.radiant_05);
+        dirs[0] = (SimpleDraweeView) view.findViewById(R.id.dire_01);
+        dirs[1] = (SimpleDraweeView) view.findViewById(R.id.dire_02);
+        dirs[2] = (SimpleDraweeView) view.findViewById(R.id.dire_03);
+        dirs[3] = (SimpleDraweeView) view.findViewById(R.id.dire_04);
+        dirs[4] = (SimpleDraweeView) view.findViewById(R.id.dire_05);
+
         recyclerView = (RecyclerView) view.findViewById(R.id.history);
-        recyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false));
+        layoutManager = new LinearLayoutManager(getActivity(), LinearLayoutManager.VERTICAL, false);
+        recyclerView.setLayoutManager(layoutManager);
         recyclerView.setAdapter(historyAdapter);
+        recyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            int lastUpdated = -1;
+
+            @Override
+            public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
+                super.onScrollStateChanged(recyclerView, newState);
+            }
+
+            @Override
+            public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
+                super.onScrolled(recyclerView, dx, dy);
+                int currentFirst = layoutManager.findFirstVisibleItemPosition();
+                if (currentFirst != lastUpdated) {
+                    lastUpdated = currentFirst;
+                    updateDetail(currentFirst);
+
+                }
+            }
+        });
         testApi();
     }
+
+    private void updateDetail(int currentFirst) {
+        Match match = historyAdapter.getMatch(currentFirst);
+        switch (historyAdapter.getItemViewType(currentFirst)) {
+            case 0:
+                updateSoloDetail(match);
+                break;
+            case 1:
+                updateAllDetail(match);
+                break;
+        }
+    }
+
+    private void updateSoloDetail(Match match) {
+        List<Player> players = match.getPlayers();
+        HeroSize heroSize = getHeroSize();
+//        for (int i = 0; i < 5; i++) {
+//            if (i == 2) {
+//                radiants[i].setVisibility(View.VISIBLE);
+//                dirs[i].setVisibility(View.VISIBLE);
+//                loadContent("", radiants[i], heroSize, allAspectRatio);
+//                loadContent("", dirs[i], heroSize, allAspectRatio);
+//                continue;
+//            }
+//            radiants[i].setVisibility(View.INVISIBLE);
+//            dirs[i].setVisibility(View.INVISIBLE);
+//        }
+        animateCollapse();
+        if (players != null && players.size() > 0) {
+            if (players.size() == 1) {
+                String slot = players.get(0).getPlayer_slot();
+                if (isRadiant(slot)) {
+                    loadContent(players.get(0).getHero_id(), radiants[2], heroSize, allAspectRatio);
+                    loadContent("", dirs[2], heroSize, allAspectRatio);
+                } else {
+                    loadContent("", radiants[2], heroSize, allAspectRatio);
+                    loadContent(players.get(0).getHero_id(), dirs[2], heroSize, allAspectRatio);
+                }
+            } else {
+                String slot1 = players.get(0).getPlayer_slot();
+                if (isRadiant(slot1)) {
+                    loadContent(players.get(0).getHero_id(), radiants[2], heroSize, allAspectRatio);
+                    loadContent(players.get(1).getHero_id(), dirs[2], heroSize, allAspectRatio);
+                } else {
+                    loadContent(players.get(1).getHero_id(), radiants[2], heroSize, allAspectRatio);
+                    loadContent(players.get(0).getHero_id(), dirs[2], heroSize, allAspectRatio);
+                }
+            }
+        }
+
+    }
+
+    private void updateAllDetail(Match match) {
+        List<Player> players = match.getPlayers();
+        HeroSize heroSize = getHeroSize();
+//        for (int i = 0; i < 5; i++) {
+//            radiants[i].setVisibility(View.VISIBLE);
+//            dirs[i].setVisibility(View.VISIBLE);
+//        }
+        animateExpand();
+        for (int i = 0; i < players.size(); i++) {
+            String slot = players.get(i).getPlayer_slot();
+            if (isRadiant(slot)) {
+                loadContent(players.get(i).getHero_id(), radiants[position(slot)], heroSize, allAspectRatio);
+            } else {
+                loadContent(players.get(i).getHero_id(), dirs[position(slot)], heroSize, allAspectRatio);
+            }
+        }
+    }
+
 
     void testApi() {
         RetrofitUtils.createApi(Dota2Service.class)
@@ -65,7 +187,6 @@ public class MainFragment extends RxFragment {
                 .compose(RetrofitUtils.<MatchResult>applyCommon2Main())
                 .compose(this.<MatchResult>bindToLifecycle())
                 .subscribe(matchHistory -> {
-                    tv.setText(matchHistory.result.toString());
                     historyAdapter.refresh(matchHistory.result.matches);
                 });
     }
@@ -80,15 +201,13 @@ public class MainFragment extends RxFragment {
             notifyDataSetChanged();
         }
 
+        public Match getMatch(int position) {
+            return historyList.get(position);
+        }
+
         @Override
         public HistoryHolder onCreateViewHolder(ViewGroup viewGroup, int i) {
-            switch (i) {
-                case 0:
-                    return new SoloHistoryHolder(LayoutInflater.from(getActivity()).inflate(R.layout.history_item_solo, viewGroup, false));
-                default:
-                    return new TotalHistoryHolder(LayoutInflater.from(getActivity()).inflate(R.layout.history_item, viewGroup, false));
-            }
-
+            return new HistoryHolder(LayoutInflater.from(getActivity()).inflate(R.layout.history_item, viewGroup, false));
         }
 
         @Override
@@ -125,8 +244,8 @@ public class MainFragment extends RxFragment {
         void refreshContent(Match matchHistory) {
             id.setText(matchHistory.getMatch_id());
             id.setOnClickListener(v -> {
-                Intent detail=new Intent(getActivity(),MatchDetailActivity.class);
-                detail.putExtra("matchId",matchHistory.getMatch_id());
+                Intent detail = new Intent(getActivity(), MatchDetailActivity.class);
+                detail.putExtra("matchId", matchHistory.getMatch_id());
                 startActivity(detail);
             });
             time.setText(sdf.format(new Date(Long.parseLong(matchHistory.getStart_time()) * 1000)));
@@ -134,76 +253,19 @@ public class MainFragment extends RxFragment {
         }
     }
 
-    class TotalHistoryHolder extends HistoryHolder {
-        SimpleDraweeView[] radiants = new SimpleDraweeView[5];
-        SimpleDraweeView[] dirs = new SimpleDraweeView[5];
-
-        public TotalHistoryHolder(View itemView) {
-            super(itemView);
-            radiants[0] = (SimpleDraweeView) itemView.findViewById(R.id.radiant_01);
-            radiants[1] = (SimpleDraweeView) itemView.findViewById(R.id.radiant_02);
-            radiants[2] = (SimpleDraweeView) itemView.findViewById(R.id.radiant_03);
-            radiants[3] = (SimpleDraweeView) itemView.findViewById(R.id.radiant_04);
-            radiants[4] = (SimpleDraweeView) itemView.findViewById(R.id.radiant_05);
-            dirs[0] = (SimpleDraweeView) itemView.findViewById(R.id.dire_01);
-            dirs[1] = (SimpleDraweeView) itemView.findViewById(R.id.dire_02);
-            dirs[2] = (SimpleDraweeView) itemView.findViewById(R.id.dire_03);
-            dirs[3] = (SimpleDraweeView) itemView.findViewById(R.id.dire_04);
-            dirs[4] = (SimpleDraweeView) itemView.findViewById(R.id.dire_05);
-        }
-
-        void refreshContent(Match matchHistory) {
-            super.refreshContent(matchHistory);
-            List<Player> players = matchHistory.getPlayers();
-            HeroSize heroSize = getHeroSize();
-            for (int i = 0; i < players.size(); i++) {
-                String slot = players.get(i).getPlayer_slot();
-                if (isRadiant(slot)) {
-                    loadContent(players.get(i).getHero_id(), radiants[position(slot)], heroSize);
-                } else {
-                    loadContent(players.get(i).getHero_id(), dirs[position(slot)], heroSize);
-                }
-            }
-        }
-    }
-
-    class SoloHistoryHolder extends HistoryHolder {
-        SimpleDraweeView radiant_01;
-        SimpleDraweeView dire_01;
-
-        public SoloHistoryHolder(View itemView) {
-            super(itemView);
-            radiant_01 = (SimpleDraweeView) itemView.findViewById(R.id.radiant_01);
-            dire_01 = (SimpleDraweeView) itemView.findViewById(R.id.dire_01);
-        }
-
-        void refreshContent(Match matchHistory) {
-            super.refreshContent(matchHistory);
-            List<Player> players = matchHistory.getPlayers();
-            HeroSize heroSize = getHeroSize();
-            if (isRadiant(players.get(0).getPlayer_slot())) {
-                loadContent(players.get(0).getHero_id(), radiant_01, heroSize);
-                loadContent(players.get(1).getHero_id(), dire_01, heroSize);
-            } else {
-                loadContent(players.get(0).getHero_id(), dire_01, heroSize);
-                loadContent(players.get(1).getHero_id(), radiant_01, heroSize);
-            }
-        }
-    }
-
-
-    private void loadContent(String heroId, SimpleDraweeView simpleDraweeView, HeroSize heroSize) {
+    private void loadContent(String heroId, SimpleDraweeView simpleDraweeView, HeroSize heroSize, float aspectRatio) {
         PipelineDraweeControllerBuilder builder = Fresco.newDraweeControllerBuilder()
                 .setTapToRetryEnabled(true)
                 .setOldController(simpleDraweeView.getController());
-        if (!TextUtils.isEmpty(heroId) && null != DotaCache.getHero(heroId)) {
-            Hero hero = DotaCache.getHero(heroId);
-            builder.setUri(UrlGenerator.generateHeroImage(hero.getName(), heroSize));
+        if (!TextUtils.isEmpty(heroId) && null != Dota2.getHero(heroId)) {
+            Hero hero = Dota2.getHero(heroId);
+            builder.setImageRequest(ImageRequest.fromUri(UrlGenerator.generateHeroImage(hero.getName(), HeroSize.FQHP)));
+            builder.setLowResImageRequest(ImageRequest.fromUri(UrlGenerator.generateHeroImage(hero.getName(), HeroSize.SHP)));
         } else {
-            builder.setUri(Uri.parse("http://bizhi.33lc.com/uploadfile/2013/0909/20130909093801210.jpg"));
+            builder.setUri("");
         }
         simpleDraweeView.setController(builder.build());
-        simpleDraweeView.setAspectRatio(heroSize.getWidth() / heroSize.getHeight());
+        simpleDraweeView.setAspectRatio(aspectRatio);
     }
 
     HeroSize getHeroSize() {
@@ -211,13 +273,46 @@ public class MainFragment extends RxFragment {
     }
 
 
+    private void animateCollapse(){
+        if(state==COLLAPSE_STATE){
+            return;
+        }
+        state=COLLAPSE_STATE;
+        AlphaAnimation alphaAnimation= new AlphaAnimation(1.0f,0);
+        alphaAnimation.setDuration(500);
+        alphaAnimation.setFillAfter(true);
+        for(int i=0;i<5;i++){
+            if(i==2){
+                continue;
+            }
+            radiants[i].startAnimation(alphaAnimation);
+            dirs[i].startAnimation(alphaAnimation);
+        }
+    }
+    private void animateExpand(){
+        if(state==EXPAND_STATE){
+            return;
+        }
+        state=EXPAND_STATE;
+        AlphaAnimation alphaAnimation= new AlphaAnimation(0,1.0f);
+        alphaAnimation.setDuration(500);
+        alphaAnimation.setFillAfter(true);
+        for(int i=0;i<5;i++){
+            if(i==2){
+                continue;
+            }
+            radiants[i].startAnimation(alphaAnimation);
+            dirs[i].startAnimation(alphaAnimation);
+        }
+    }
+
     private boolean isRadiant(String slot) {
-        Integer value=Integer.parseInt(slot);
-        return (value&128)>0;
+        Integer value = Integer.parseInt(slot);
+        return (value & 128) > 0;
     }
 
     private int position(String slot) {
         Integer by = Integer.parseInt(slot);
-        return by&7;
+        return by & 7;
     }
 }

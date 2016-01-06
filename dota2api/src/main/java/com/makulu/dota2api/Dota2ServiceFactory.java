@@ -26,7 +26,6 @@ import de.greenrobot.event.EventBus;
 import io.realm.Realm;
 import rx.Observable;
 import rx.Subscriber;
-import rx.functions.Action1;
 import rx.schedulers.Schedulers;
 
 /**
@@ -80,7 +79,7 @@ public final class Dota2ServiceFactory {
                     }
                 }))
                 .compose(logSource("正在解压英雄数据..."))
-                .doOnNext(heroResult -> DotaCache.initHero(heroResult.result.heroes))
+                .doOnNext(heroResult -> Dota2MemoryCache.initHero(heroResult.result.heroes))
                 .flatMap(heroResult -> Observable.from(heroResult.result.heroes))
                 .compose(saveHeroToDisk(context))
                 .compose(heroObservable -> heroObservable.doOnNext(hero -> EventBus.getDefault().post(new HeroEvent(hero.getLocalized_name() + "保存完毕!"))))
@@ -125,7 +124,7 @@ public final class Dota2ServiceFactory {
                     }
                 }))
                 .compose(logSource("正在解压物品数据..."))
-                .doOnNext(itemResult -> DotaCache.initItem(itemResult.result.items))
+                .doOnNext(itemResult -> Dota2MemoryCache.initItem(itemResult.result.items))
                 .flatMap(itemResult -> Observable.from(itemResult.result.items))
                 .compose(saveItemToDisk(context))
                 .compose(itemObservable -> itemObservable.doOnNext(item -> EventBus.getDefault().post(new ItemEvent(item.getLocalized_name() + "保存完毕!"))))

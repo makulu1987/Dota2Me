@@ -52,6 +52,6 @@ dependencies {
     compile 'com.trello:rxlifecycle:0.1.0'
     compile 'com.trello:rxlifecycle-components:0.1.0'
     compile 'com.jakewharton.rxbinding:rxbinding:0.1.0'
-    compile 'com.facebook.fresco:fresco:0.6.1'
     compile project(':dota2api')
+    compile 'com.facebook.fresco:fresco:0.8.1'
 }

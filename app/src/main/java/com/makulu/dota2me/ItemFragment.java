@@ -10,15 +10,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.facebook.drawee.view.SimpleDraweeView;
-import com.makulu.dota2api.Data;
-import com.makulu.dota2api.Dota2ServiceFactory;
+import com.makulu.dota2api.Dota2;
 import com.makulu.dota2api.UrlGenerator;
 import com.makulu.dota2api.model.item.Item;
 import com.trello.rxlifecycle.components.RxFragment;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Created by xujintian on 2015/8/17.
@@ -39,17 +37,7 @@ public class ItemFragment extends RxFragment {
         recyclerView = (RecyclerView) view.findViewById(R.id.items);
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 3, GridLayoutManager.VERTICAL, false));
         recyclerView.setAdapter(historyAdapter);
-    }
-
-    @Override
-    public void onStart() {
-        super.onStart();
-        Dota2ServiceFactory.getGameItems(getActivity())
-                .compose(this.<Data<List<Item>>>bindToLifecycle())
-                .delaySubscription(300, TimeUnit.MILLISECONDS)
-                .subscribe(listData -> {
-                    historyAdapter.refresh(listData.getData());
-                });
+        historyAdapter.refresh(Dota2.getItems());
     }
 
     class HistoryAdapter extends RecyclerView.Adapter<ItemHolder> {
